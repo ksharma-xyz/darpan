@@ -1,0 +1,50 @@
+[versions]
+java = "21"
+kotlin = "2.3.10"
+agp = "9.1.0"
+
+# Screenshot testing. These move together - Roborazzi is coupled to the Compose and AGP
+# versions, so bump them as a set.
+roborazzi = "1.59.0"
+composablePreviewScanner = "0.8.2"
+robolectric = "4.16.1"
+junit = "4.13.2"
+
+# androidx.compose.ui artifacts (ui-tooling, ui-test-*) are versioned together, and are
+# separate from the org.jetbrains.compose multiplatform artifacts.
+androidx-compose-ui = "1.10.6"
+compose-multiplatform = "1.10.2"
+
+android-min-sdk = "28"
+android-compile-sdk = "36"
+
+# Publishing & tooling
+vanniktech-publish = "0.30.0"
+dokka = "2.0.0"
+
+[libraries]
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
+
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "androidx-compose-ui" }
+test-composeUiTestJunit4 = { group = "androidx.compose.ui", name = "ui-test-junit4", version.ref = "androidx-compose-ui" }
+test-composeUiTestManifest = { group = "androidx.compose.ui", name = "ui-test-manifest", version.ref = "androidx-compose-ui" }
+
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
+# The :android scanner, NOT :common. The common one looks for
+# org.jetbrains.compose.ui.tooling.preview.Preview and silently finds zero previews.
+preview-scanner-android = { module = "io.github.sergio-sastre.ComposablePreviewScanner:android", version.ref = "composablePreviewScanner" }
+
+test-junit = { group = "junit", name = "junit", version.ref = "junit" }
+test-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+[plugins]
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+androidKotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+vanniktechPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
