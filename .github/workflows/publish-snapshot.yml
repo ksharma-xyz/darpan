@@ -1,0 +1,61 @@
+name: Publish snapshot
+
+# Sonatype Central Portal (the modern replacement for OSSRH) does NOT accept
+# SNAPSHOT versions. Only tagged releases go through publish-release.yml.
+#
+# This workflow exists so that any push to main that bumps to a non-SNAPSHOT
+# version still gets a publish attempt. Pushes during normal "x.y.z-SNAPSHOT"
+# development exit cleanly with a notice.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    if: github.repository == 'ksharma-xyz/darpan'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read VERSION_NAME from gradle.properties
+        id: version
+        run: |
+          v=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+          echo "Version on this commit: $v"
+
+      - name: Skip if version is a SNAPSHOT
+        if: contains(steps.version.outputs.value, '-SNAPSHOT')
+        run: |
+          echo "::notice::Version ${{ steps.version.outputs.value }} is a SNAPSHOT."
+          echo "::notice::Sonatype Central Portal does not accept SNAPSHOT publications."
+          echo "::notice::Tag a release (vX.Y.Z) to publish via publish-release.yml."
+
+      - name: Set up JDK 21
+        if: ${{ !contains(steps.version.outputs.value, '-SNAPSHOT') }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        if: ${{ !contains(steps.version.outputs.value, '-SNAPSHOT') }}
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Publish to Maven Central
+        if: ${{ !contains(steps.version.outputs.value, '-SNAPSHOT') }}
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ORG_GRADLE_PROJECT_mavenCentralUsername" ]; then
+            echo "::notice::Sonatype secrets not configured yet. Skipping publication."
+            echo "::notice::Add SONATYPE_USERNAME, SONATYPE_PASSWORD, SIGNING_KEY, SIGNING_KEY_PASSWORD"
+            echo "::notice::in repo settings to enable. See TODO.md / docs/publishing.md."
+            exit 0
+          fi
+          ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache --stacktrace
