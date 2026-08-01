@@ -22,8 +22,13 @@ gh secret set SIGNING_KEY           -R ksharma-xyz/darpan < signing-key.asc
 gh secret set SIGNING_KEY_PASSWORD  -R ksharma-xyz/darpan
 ```
 
-Until they exist, `publish-snapshot.yml` exits cleanly with a notice and
-`publish-release.yml` fails loudly. That is deliberate — a tag should not silently no-op.
+Until they exist, `publish-release.yml` fails loudly rather than silently no-opping, which is
+deliberate: a tag that quietly publishes nothing is worse than a red build.
+
+Note `publish-snapshot.yml` here is **manual only**, unlike aagya's, which runs on every push to
+main. That is safe on aagya because its version carries `-SNAPSHOT` and the job exits early.
+darpan is already at `0.1.0`, so the same trigger would make the first push after the secrets
+land an unannounced and irreversible release.
 
 ## Releasing
 

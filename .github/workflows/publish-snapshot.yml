@@ -7,9 +7,11 @@ name: Publish snapshot
 # version still gets a publish attempt. Pushes during normal "x.y.z-SNAPSHOT"
 # development exit cleanly with a notice.
 
+# Manual only, unlike aagya. aagya runs this on every push to main, which is harmless there
+# because its version carries -SNAPSHOT and the job exits early. darpan's version is already
+# 0.1.0, so the same trigger would turn the first push after the secrets are added into an
+# unannounced and irreversible release. Releases here go through a v* tag.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
