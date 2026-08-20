@@ -25,15 +25,17 @@ gh secret set SIGNING_KEY_PASSWORD  -R ksharma-xyz/darpan
 Until they exist, `publish-release.yml` fails loudly rather than silently no-opping, which is
 deliberate: a tag that quietly publishes nothing is worse than a red build.
 
-Note `publish-snapshot.yml` here is **manual only**, unlike aagya's, which runs on every push to
-main. That is safe on aagya because its version carries `-SNAPSHOT` and the job exits early.
-darpan is already at `0.1.0`, so the same trigger would make the first push after the secrets
-land an unannounced and irreversible release.
+`publish-snapshot.yml` now matches aagya and dhruva: it runs on every push to `main` and
+publishes only when `VERSION_NAME` carries `-SNAPSHOT`, exiting early otherwise. `main` is kept
+on an `x.y.z-SNAPSHOT` version between releases, so every push republishes that mutable
+coordinate and release versions are left to `publish-release.yml` and a tag.
 
 ## Releasing
 
 1. Set `VERSION_NAME` in `gradle.properties` to the release version, no `-SNAPSHOT`.
-   **Central Portal rejects SNAPSHOT versions outright** — there is no snapshot channel here.
+   Central Portal does have a snapshot channel
+   (<https://central.sonatype.com/repository/maven-snapshots/>), which is what
+   `publish-snapshot.yml` targets; releases are a separate, permanent channel.
 2. Commit, push to `main`.
 3. Tag and push:
    ```bash
@@ -43,7 +45,7 @@ land an unannounced and irreversible release.
 
 ## A release is permanent
 
-Maven Central coordinates are immutable. Once `io.github.ksharma-xyz:darpan-*:0.1.0` is
+Maven Central coordinates are immutable. Once `xyz.ksharma:darpan-*:0.1.0` is
 released it can never be deleted, replaced, or re-uploaded. A mistake costs a version number,
 not a fix.
 
@@ -65,8 +67,8 @@ module-metadata, sources and javadoc generation. CI runs it on every push.
 
 | Artifact | Targets |
 |---|---|
-| `io.github.ksharma-xyz:darpan-annotations` | android, jvm, iosArm64, iosSimulatorArm64, iosX64 |
-| `io.github.ksharma-xyz:darpan-roborazzi` | android only (host-test classpath) |
+| `xyz.ksharma:darpan-annotations` | android, jvm, iosArm64, iosSimulatorArm64, iosX64 |
+| `xyz.ksharma:darpan-roborazzi` | android only (host-test classpath) |
 
 ## After the first release
 

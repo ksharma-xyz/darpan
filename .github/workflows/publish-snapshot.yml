@@ -1,23 +1,29 @@
 name: Publish snapshot
 
-# Sonatype Central Portal (the modern replacement for OSSRH) does NOT accept
-# SNAPSHOT versions. Only tagged releases go through publish-release.yml.
+# Publishes the current main to the Central Portal snapshot repository
+# (https://central.sonatype.com/repository/maven-snapshots/) so downstream apps
+# can consume unreleased changes without waiting for a tagged release.
 #
-# This workflow exists so that any push to main that bumps to a non-SNAPSHOT
-# version still gets a publish attempt. Pushes during normal "x.y.z-SNAPSHOT"
-# development exit cleanly with a notice.
+# Division of labour:
+#   - main is kept on an x.y.z-SNAPSHOT version between releases. Every push
+#     here republishes that mutable coordinate.
+#   - Release and release-candidate versions are published only by
+#     publish-release.yml, and only in response to a tag.
+#
+# A non-SNAPSHOT version on main therefore means a release commit is passing
+# through, and this workflow deliberately does nothing: publishing it here as
+# well would race publish-release.yml for the same coordinate.
 
-# Manual only, unlike aagya. aagya runs this on every push to main, which is harmless there
-# because its version carries -SNAPSHOT and the job exits early. darpan's version is already
-# 0.1.0, so the same trigger would turn the first push after the secrets are added into an
-# unannounced and irreversible release. Releases here go through a v* tag.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   publish:
     if: github.repository == 'ksharma-xyz/darpan'
     runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -28,26 +34,26 @@ jobs:
           echo "value=$v" >> "$GITHUB_OUTPUT"
           echo "Version on this commit: $v"
 
-      - name: Skip if version is a SNAPSHOT
-        if: contains(steps.version.outputs.value, '-SNAPSHOT')
+      - name: Skip release versions
+        if: ${{ !contains(steps.version.outputs.value, '-SNAPSHOT') }}
         run: |
-          echo "::notice::Version ${{ steps.version.outputs.value }} is a SNAPSHOT."
-          echo "::notice::Sonatype Central Portal does not accept SNAPSHOT publications."
-          echo "::notice::Tag a release (vX.Y.Z) to publish via publish-release.yml."
+          echo "::notice::Version ${{ steps.version.outputs.value }} is not a SNAPSHOT."
+          echo "::notice::Release and RC versions are published by publish-release.yml"
+          echo "::notice::in response to a tag. Nothing to do here."
 
       - name: Set up JDK 21
-        if: ${{ !contains(steps.version.outputs.value, '-SNAPSHOT') }}
+        if: contains(steps.version.outputs.value, '-SNAPSHOT')
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
       - name: Set up Gradle
-        if: ${{ !contains(steps.version.outputs.value, '-SNAPSHOT') }}
+        if: contains(steps.version.outputs.value, '-SNAPSHOT')
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Publish to Maven Central
-        if: ${{ !contains(steps.version.outputs.value, '-SNAPSHOT') }}
+      - name: Publish snapshot to Central Portal
+        if: contains(steps.version.outputs.value, '-SNAPSHOT')
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
@@ -57,7 +63,10 @@ jobs:
           if [ -z "$ORG_GRADLE_PROJECT_mavenCentralUsername" ]; then
             echo "::notice::Sonatype secrets not configured yet. Skipping publication."
             echo "::notice::Add SONATYPE_USERNAME, SONATYPE_PASSWORD, SIGNING_KEY, SIGNING_KEY_PASSWORD"
-            echo "::notice::in repo settings to enable. See TODO.md / docs/publishing.md."
+            echo "::notice::in repo settings to enable. See docs/publishing.md."
             exit 0
           fi
-          ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache --stacktrace
+          # publishToMavenCentral, not publishAndReleaseToMavenCentral: snapshots
+          # go straight to the snapshot repository and have no staging deployment
+          # to release.
+          ./gradlew publishToMavenCentral --no-configuration-cache --stacktrace
