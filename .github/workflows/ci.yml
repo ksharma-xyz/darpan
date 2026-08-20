@@ -13,6 +13,10 @@ concurrency:
 
 jobs:
   build:
+    name: Build (assemble, tests, lint, detekt, publish dry-run)
+    # macOS, not ubuntu: :darpan-annotations declares iosArm64/iosSimulatorArm64/iosX64, and
+    # those targets only compile on a Mac. On ubuntu `build` would silently skip them and the
+    # publication smoke test below would assemble an incomplete set of artifacts.
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -24,14 +28,25 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Set up Gradle
+      - name: Set up Gradle (with cache)
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Kotlin/Native Konan dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
 
       - name: Write local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Assemble
-        run: ./gradlew assemble --stacktrace
+      # One `build` rather than a hand-maintained list of tasks, matching aagya and dhruva.
+      # `build` is what a contributor runs locally, so CI and local agree by construction
+      # instead of by remembering to keep two lists in sync. This was previously `assemble`
+      # alone, which compiled the code and checked nothing about it.
+      - name: Build, test, lint, detekt
+        run: ./gradlew build --stacktrace
 
       # A local install exercises the whole publication path - POM generation, module
       # metadata, sources and javadoc jars - without touching Central. If this passes, a
@@ -40,4 +55,14 @@ jobs:
       # Signing is forced off here: the GPG key is a release secret, and requiring it would
       # mean CI could not run on forks or pull requests. publish-release.yml signs for real.
       - name: Publication smoke test
-        run: ./gradlew publishToMavenLocal -PRELEASE_SIGNING_ENABLED=false --stacktrace
+        run: ./gradlew publishToMavenLocal -PRELEASE_SIGNING_ENABLED=false --no-configuration-cache --stacktrace
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+          retention-days: 7
