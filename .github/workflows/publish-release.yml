@@ -21,6 +21,26 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
 
+      # A tag and gradle.properties that disagree would silently publish the
+      # wrong coordinate, and Maven Central releases cannot be taken back.
+      - name: Verify tag matches VERSION_NAME
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
+          echo "Tag: $tag"
+          echo "VERSION_NAME: $version"
+          if [ "$tag" != "v$version" ]; then
+            echo "::error::Tag '$tag' does not match VERSION_NAME '$version' (expected 'v$version')."
+            echo "::error::Bump VERSION_NAME in gradle.properties and retag."
+            exit 1
+          fi
+          case "$version" in
+            *-SNAPSHOT)
+              echo "::error::Refusing to publish a SNAPSHOT version as a release."
+              exit 1
+              ;;
+          esac
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -50,3 +70,6 @@ jobs:
         with:
           generate_release_notes: true
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          # Without this an RC tag would be marked "Latest release" on the repo
+          # front page, pointing public consumers at a candidate build.
+          prerelease: ${{ contains(github.event.inputs.tag || github.ref_name, '-rc') }}
