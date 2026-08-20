@@ -1,0 +1,36 @@
+# Detekt configuration for Darpan.
+#
+# buildUponDefaultConfig = true in build.gradle.kts, so this file only records
+# deliberate deviations from detekt's defaults. Anything not mentioned here keeps
+# the default behaviour.
+
+build:
+  # Fail the build on any finding. The point of wiring detekt up is that its
+  # output is acted on; a non-zero threshold would recreate the situation where
+  # findings are reported and ignored.
+  maxIssues: 0
+
+complexity:
+  LongParameterList:
+    # Snapshot capture takes a spread of device-qualifier and variant parameters by
+    # nature, and splitting them into holder objects would be worse to call.
+    functionThreshold: 8
+    constructorThreshold: 8
+
+style:
+  MagicNumber:
+    # Device qualifiers and font scales are literal values by definition; naming
+    # them would be indirection, not clarity.
+    excludes:
+      - '**/*Test.kt'
+  MaxLineLength:
+    maxLineLength: 120
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase by convention, and kotlin-test names are
+    # backticked sentences.
+    ignoreAnnotated:
+      - 'Composable'
+    excludes:
+      - '**/*Test.kt'

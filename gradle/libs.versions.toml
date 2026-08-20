@@ -13,14 +13,15 @@ junit = "4.13.2"
 # androidx.compose.ui artifacts (ui-tooling, ui-test-*) are versioned together, and are
 # separate from the org.jetbrains.compose multiplatform artifacts.
 androidx-compose-ui = "1.10.6"
-compose-multiplatform = "1.10.2"
+compose-multiplatform = "1.10.3"
 
 android-min-sdk = "28"
 android-compile-sdk = "36"
 
 # Publishing & tooling
-vanniktech-publish = "0.30.0"
+vanniktech-publish = "0.37.0"
 dokka = "2.0.0"
+detekt = "1.23.8"
 
 [libraries]
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
@@ -48,3 +49,4 @@ composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-mu
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 vanniktechPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
