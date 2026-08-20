@@ -38,12 +38,12 @@ kotlin {
     }
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.ksharma-xyz:darpan-annotations:<version>")
+            implementation("xyz.ksharma:darpan-annotations:<version>")
         }
         getByName("androidHostTest") {
             kotlin.srcDir("src/androidHostTest/kotlin")
             dependencies {
-                implementation("io.github.ksharma-xyz:darpan-roborazzi:<version>")
+                implementation("xyz.ksharma:darpan-roborazzi:<version>")
             }
         }
     }
